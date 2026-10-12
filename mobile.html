@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile For Sale 2083 - 3D Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#05070f',
+                            card: '#0f1424',
+                            border: '#1e293b',
+                            cyan: '#00f0ff',
+                            pink: '#ff007f',
+                            purple: '#a855f7',
+                            green: '#22c55e',
+                            gold: '#eab308'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #05070f; color: #f8fafc; overflow: hidden; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .glow-cyan { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
+        .glow-pink { box-shadow: 0 0 15px rgba(255, 0, 127, 0.4); }
+        .glow-gold { box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #0f1424; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+        .glass-panel { background: rgba(15, 20, 36, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="relative w-screen h-screen select-none overflow-hidden">
+
+    <canvas id="game-canvas" class="absolute inset-0 w-full h-full z-0 cursor-grab active:cursor-grabbing"></canvas>
+
+    <header class="absolute top-0 left-0 right-0 z-20 p-3 md:p-4 pointer-events-none">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            
+            <!-- Logo & Title -->
+            <div class="glass-panel px-4 py-2 rounded-2xl flex items-center space-x-3 pointer-events-auto border-l-4 border-l-cyan-400 shadow-xl">
+                <div class="bg-gradient-to-tr from-cyan-500 to-purple-600 p-2 rounded-xl text-white">
+                    <i class="fa-solid fa-mobile-screen text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-extrabold text-base md:text-lg tracking-wider bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 bg-clip-text text-transparent">
+                        MOBILE FOR SALE 2083
+                    </h1>
+                    <p class="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">3D SHOP SIMULATOR</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar (Cash Direct Balance) -->
+            <div class="glass-panel px-4 py-2 rounded-2xl flex items-center space-x-4 md:space-x-6 text-xs md:text-sm font-mono pointer-events-auto shadow-xl">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-wallet text-green-400 text-base"></i>
+                    <span class="text-gray-400 text-xs">CASH BALANCE:</span>
+                    <span id="stat-cash" class="font-bold text-green-400 font-orbitron text-base">NPR 145,000</span>
+                </div>
+                <div class="w-px h-4 bg-gray-700"></div>
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-boxes-stacked text-cyan-400"></i>
+                    <span class="text-gray-400 text-xs">STOCK:</span>
+                    <span id="stat-stock" class="font-bold text-cyan-300 font-orbitron">2 Units</span>
+                </div>
+                <div class="w-px h-4 bg-gray-700"></div>
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-star text-amber-400"></i>
+                    <span class="text-gray-400 text-xs">REP:</span>
+                    <span id="stat-rep" class="font-bold text-amber-300 font-orbitron">50/100</span>
+                </div>
+                <div class="w-px h-4 bg-gray-700"></div>
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-calendar-day text-pink-400"></i>
+                    <span class="text-gray-400 text-xs">DAY:</span>
+                    <span id="stat-day" class="font-bold text-pink-300 font-orbitron">1</span>
+                </div>
+            </div>
+
+            <!-- Header Quick Controls -->
+            <div class="flex items-center space-x-2 pointer-events-auto">
+                <button onclick="game.toggleInventoryModal()" class="glass-panel hover:bg-cyan-500/20 text-cyan-300 border-cyan-500/40 px-3 py-2 rounded-xl text-xs font-orbitron font-semibold flex items-center space-x-2 transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-box-open text-cyan-400"></i>
+                    <span>MY INVENTORY</span>
+                </button>
+                <button onclick="game.nextDay()" class="glass-panel hover:bg-pink-500/20 text-pink-300 border-pink-500/40 px-3 py-2 rounded-xl text-xs font-orbitron font-semibold flex items-center space-x-2 transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-moon"></i>
+                    <span>END DAY</span>
+                </button>
+                <button onclick="game.toggleSound()" id="btn-sound" class="glass-panel hover:border-cyan-400 p-2.5 rounded-xl text-cyan-400 transition cursor-pointer">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+        <div class="glass-panel px-3 py-2 rounded-2xl flex items-center space-x-2 shadow-2xl border border-cyber-cyan/30">
+            <button onclick="game.switchCameraView('counter')" id="cam-btn-counter" class="cam-btn px-3 py-2 rounded-xl font-orbitron text-xs font-bold transition flex items-center space-x-2 bg-cyan-500 text-black glow-cyan cursor-pointer">
+                <i class="fa-solid fa-shop"></i>
+                <span>MAIN COUNTER</span>
+            </button>
+            <button onclick="game.switchCameraView('workbench')" id="cam-btn-workbench" class="cam-btn px-3 py-2 rounded-xl font-orbitron text-xs font-bold transition flex items-center space-x-2 text-gray-300 hover:bg-cyber-card cursor-pointer">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+                <span>REPAIR BENCH</span>
+            </button>
+            <button onclick="game.switchCameraView('showcase')" id="cam-btn-showcase" class="cam-btn px-3 py-2 rounded-xl font-orbitron text-xs font-bold transition flex items-center space-x-2 text-gray-300 hover:bg-cyber-card cursor-pointer">
+                <i class="fa-solid fa-gem"></i>
+                <span>DISPLAY STANDS</span>
+            </button>
+            <button onclick="game.switchCameraView('laptop')" id="cam-btn-laptop" class="cam-btn px-3 py-2 rounded-xl font-orbitron text-xs font-bold transition flex items-center space-x-2 text-gray-300 hover:bg-cyber-card cursor-pointer">
+                <i class="fa-solid fa-laptop text-purple-400"></i>
+                <span>NET-MARKET</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="absolute top-20 right-4 bottom-24 w-80 md:w-96 z-20 pointer-events-auto flex flex-col justify-between">
+        <div id="side-hud-panel" class="glass-panel rounded-2xl p-4 flex-1 flex flex-col overflow-hidden shadow-2xl">
+            <!-- Dynamic UI loaded by JS -->
+        </div>
+    </div>
+
+    <div id="inventory-modal" class="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden pointer-events-auto">
+        <div class="glass-panel max-w-3xl w-full max-h-[85vh] rounded-2xl p-6 border border-cyber-cyan/40 shadow-2xl relative flex flex-col space-y-4">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-boxes-stacked text-cyan-400 text-xl"></i>
+                    <h3 class="font-orbitron font-extrabold text-lg text-white">MY OWNED PHONES INVENTORY</h3>
+                </div>
+                <button onclick="game.toggleInventoryModal()" class="text-gray-400 hover:text-white p-2 rounded-lg cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="inventory-list-container" class="flex-1 overflow-y-auto space-y-3 pr-2">
+                <!-- Phone inventory cards inserted via JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="game-modal" class="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden pointer-events-auto">
+        <div id="modal-card" class="glass-panel max-w-lg w-full rounded-2xl p-6 border border-cyber-cyan/40 shadow-2xl relative space-y-4">
+            <!-- Dynamic Modal Content -->
+        </div>
+    </div>
+
+    <script>
+        const PHONE_DATABASE = [
+            { id: "mod_1", name: "Nokia 3310 (2083 Quantum Ed.)", brand: "Nokia", tier: "retro", basePrice: 4500, storageOpts: [16, 32], color: 0x2b4c7e },
+            { id: "mod_2", name: "CyberMi Note 18", brand: "Xiaomi", tier: "budget", basePrice: 12000, storageOpts: [64, 128], color: 0x10b981 },
+            { id: "mod_3", name: "Galaxy Prime 2083", brand: "Samsung", tier: "mid", basePrice: 28000, storageOpts: [128, 256], color: 0x3b82f6 },
+            { id: "mod_4", name: "OnePlus Cyber-X", brand: "OnePlus", tier: "mid", basePrice: 42000, storageOpts: [256, 512], color: 0xef4444 },
+            { id: "mod_5", name: "iPhone 22 Ultra Pro", brand: "Apple", tier: "flagship", basePrice: 110000, storageOpts: [256, 512, 1024], color: 0xe2e8f0 },
+            { id: "mod_6", name: "HoloFold 2083", brand: "CyberTech", tier: "futuristic", basePrice: 210000, storageOpts: [1024, 2048], color: 0xa855f7 }
+        ];
+
+        const CUSTOMERS_LIST = [
+            "Aarav Sharma", "Siddharth Thapa", "Pooja Shrestha", "Bipin Gurung",
+            "Sujata Karki", "Anish Maharjan", "Bijay Basnet", "Roshani Rai", "Pradeep Lama"
+        ];
+
+        class MobileForSaleGame {
+            constructor() {
+                this.cash = 145000; // Consolidated total cash balance (No bank system)
+                this.rep = 50;
+                this.day = 1;
+
+                this.inventory = [];
+                this.showcaseSlots = [null, null, null]; // 3 Display Stands
+                this.marketplaceListings = [];
+                this.activeCustomer = null;
+                this.mountedPhoneId = null; // Workbench active phone ID
+
+                this.cameraView = 'counter'; // counter, workbench, showcase, laptop
+                this.soundEnabled = true;
+
+                // 3D Engine Variables
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.meshPhoneOnWorkbench = null;
+                this.showcaseMeshes = [null, null, null];
+
+                this.initEngine();
+            }
+
+            initEngine() {
+                const canvas = document.getElementById('game-canvas');
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x05070f);
+                this.scene.fog = new THREE.FogExp2(0x05070f, 0.035);
+
+                this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+                this.updateCameraTransform();
+
+                this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: "high-performance" });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+                const ambientLight = new THREE.AmbientLight(0x1e293b, 1.8);
+                this.scene.add(ambientLight);
+
+                const cyanSpot = new THREE.SpotLight(0x00f0ff, 3.5);
+                cyanSpot.position.set(-3, 4, 3);
+                cyanSpot.castShadow = true;
+                this.scene.add(cyanSpot);
+
+                const pinkSpot = new THREE.SpotLight(0xff007f, 3.0);
+                pinkSpot.position.set(3, 4, -2);
+                this.scene.add(pinkSpot);
+
+                this.build3DEnvironment();
+
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                this.generateMarketplaceListings();
+                this.spawnInitialInventory();
+                this.renderSideHUD();
+                this.updateStatsDisplay();
+
+                this.animate();
+            }
+
+            build3DEnvironment() {
+                // Shop Desk
+                const desk = new THREE.Mesh(
+                    new THREE.BoxGeometry(6, 0.2, 2.5),
+                    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.8 })
+                );
+                desk.position.set(0, 0, 0);
+                desk.receiveShadow = true;
+                this.scene.add(desk);
+
+                // Front Desk Neon Strip
+                const neonStrip = new THREE.Mesh(
+                    new THREE.BoxGeometry(5.8, 0.05, 0.12),
+                    new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+                );
+                neonStrip.position.set(0, -0.1, 1.22);
+                this.scene.add(neonStrip);
+
+                // Repair Workbench Mat (Left Side)
+                const labMat = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.8, 0.02, 1.2),
+                    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2 })
+                );
+                labMat.position.set(-1.8, 0.11, 0);
+                this.scene.add(labMat);
+
+                // Laptop Terminal (Right Side)
+                const laptopBase = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 0.03, 0.6),
+                    new THREE.MeshStandardMaterial({ color: 0x020617, metalness: 0.8 })
+                );
+                laptopBase.position.set(1.8, 0.12, 0.2);
+                this.scene.add(laptopBase);
+
+                const laptopScreen = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 0.5, 0.02),
+                    new THREE.MeshBasicMaterial({ color: 0xa855f7 })
+                );
+                laptopScreen.position.set(1.8, 0.38, -0.08);
+                laptopScreen.rotation.x = -0.2;
+                this.scene.add(laptopScreen);
+
+                // 3D Display Pedestals
+                for (let i = 0; i < 3; i++) {
+                    const ped = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.25, 0.3, 0.15, 16),
+                        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 })
+                    );
+                    ped.position.set(-0.6 + i * 0.6, 0.18, 0.3);
+                    this.scene.add(ped);
+                }
+            }
+
+            create3DPhoneMesh(phoneData) {
+                const group = new THREE.Group();
+
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.28, 0.02, 0.55),
+                    new THREE.MeshStandardMaterial({ color: phoneData.color, roughness: 0.2, metalness: 0.8 })
+                );
+                body.castShadow = true;
+                group.add(body);
+
+                const screenMatColor = phoneData.screenCrack ? 0xef4444 : 0x020617;
+                const screen = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.25, 0.005, 0.5),
+                    new THREE.MeshBasicMaterial({ color: screenMatColor })
+                );
+                screen.position.set(0, 0.011, 0);
+                group.add(screen);
+
+                const cameraLens = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.04, 0.04, 0.01, 12),
+                    new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+                );
+                cameraLens.position.set(0.08, -0.011, -0.2);
+                group.add(cameraLens);
+
+                return group;
+            }
+
+            updateCameraTransform() {
+                if (this.cameraView === 'counter') {
+                    this.camera.position.set(0, 1.3, 2.2);
+                    this.camera.lookAt(0, 0.2, 0);
+                } else if (this.cameraView === 'workbench') {
+                    this.camera.position.set(-1.8, 0.9, 0.9);
+                    this.camera.lookAt(-1.8, 0.1, 0);
+                } else if (this.cameraView === 'showcase') {
+                    this.camera.position.set(0, 0.8, 1.2);
+                    this.camera.lookAt(0, 0.2, 0.2);
+                } else if (this.cameraView === 'laptop') {
+                    this.camera.position.set(1.8, 0.8, 0.8);
+                    this.camera.lookAt(1.8, 0.35, 0.1);
+                }
+            }
+
+            switchCameraView(viewName) {
+                this.playSound('click');
+                this.cameraView = viewName;
+                this.updateCameraTransform();
+
+                document.querySelectorAll('.cam-btn').forEach(btn => {
+                    btn.className = "cam-btn px-3 py-2 rounded-xl font-orbitron text-xs font-bold transition flex items-center space-x-2 text-gray-300 hover:bg-cyber-card cursor-pointer";
+                });
+                const activeBtn = document.getElementById(`cam-btn-${viewName}`);
+                if (activeBtn) {
+                    activeBtn.className = "cam-btn px-3 py-2 rounded-xl font-orbitron text-xs font-bold transition flex items-center space-x-2 bg-cyan-500 text-black glow-cyan cursor-pointer";
+                }
+
+                this.renderSideHUD();
+            }
+
+            playSound(type) {
+                if (!this.soundEnabled) return;
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    if (type === 'cash') {
+                        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+                        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.25);
+                    } else if (type === 'repair') {
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(150, ctx.currentTime);
+                        osc.frequency.linearRampToValueAtTime(400, ctx.currentTime + 0.2);
+                        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.2);
+                    } else if (type === 'click') {
+                        osc.frequency.setValueAtTime(400, ctx.currentTime);
+                        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.05);
+                    }
+                } catch(e) {}
+            }
+
+            toggleSound() {
+                this.soundEnabled = !this.soundEnabled;
+                document.getElementById('btn-sound').innerHTML = this.soundEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark"></i>';
+            }
+
+            generateRandomPhone() {
+                const model = PHONE_DATABASE[Math.floor(Math.random() * PHONE_DATABASE.length)];
+                const storage = model.storageOpts[Math.floor(Math.random() * model.storageOpts.length)];
+                const battery = Math.floor(Math.random() * 55) + 45;
+                const hasCrack = Math.random() < 0.35;
+                const isLocked = Math.random() < 0.2;
+
+                let estVal = model.basePrice * (storage / model.storageOpts[0]);
+                if (hasCrack) estVal *= 0.65;
+                if (battery < 70) estVal *= 0.8;
+                if (isLocked) estVal *= 0.45;
+
+                return {
+                    id: 'phone_' + Math.random().toString(36).substring(2, 9),
+                    modelName: model.name,
+                    brand: model.brand,
+                    tier: model.tier,
+                    color: model.color,
+                    storage: storage,
+                    battery: battery,
+                    screenCrack: hasCrack,
+                    isLocked: isLocked,
+                    costPrice: Math.round(estVal * 0.75), // Original price paid by player
+                    estimatedValue: Math.round(estVal),
+                    showcaseSlot: null
+                };
+            }
+
+            spawnInitialInventory() {
+                this.inventory.push(this.generateRandomPhone());
+                this.inventory.push(this.generateRandomPhone());
+            }
+
+            generateMarketplaceListings() {
+                this.marketplaceListings = [];
+                for (let i = 0; i < 4; i++) {
+                    const phone = this.generateRandomPhone();
+                    const listPrice = Math.round(phone.estimatedValue * (Math.random() * 0.25 + 0.75));
+                    this.marketplaceListings.push({
+                        id: 'net_' + Math.random().toString(36).substring(2, 9),
+                        seller: CUSTOMERS_LIST[Math.floor(Math.random() * CUSTOMERS_LIST.length)],
+                        phone: phone,
+                        price: listPrice
+                    });
+                }
+            }
+
+            callCustomer() {
+                this.playSound('click');
+                const name = CUSTOMERS_LIST[Math.floor(Math.random() * CUSTOMERS_LIST.length)];
+                
+                // Check active phones on display stands or inventory
+                const phonesOnDisplay = this.showcaseSlots.filter(p => p !== null);
+                
+                // If player has NO phones in stock, customers will ONLY come to SELL phones to player
+                if (this.inventory.length === 0) {
+                    const phone = this.generateRandomPhone();
+                    const offer = Math.round(phone.estimatedValue * (Math.random() * 0.2 + 0.55));
+                    this.activeCustomer = { type: 'seller', name: name, phone: phone, price: offer };
+                } else {
+                    const isSellingToPlayer = Math.random() < 0.4;
+                    if (isSellingToPlayer) {
+                        const phone = this.generateRandomPhone();
+                        const offer = Math.round(phone.estimatedValue * (Math.random() * 0.2 + 0.55));
+                        this.activeCustomer = { type: 'seller', name: name, phone: phone, price: offer };
+                    } else {
+                        // Customer wants to BUY a phone strictly from player's OWNED inventory/display stands
+                        const targetPhone = phonesOnDisplay.length > 0 && Math.random() < 0.75
+                            ? phonesOnDisplay[Math.floor(Math.random() * phonesOnDisplay.length)]
+                            : this.inventory[Math.floor(Math.random() * this.inventory.length)];
+
+                        const offer = Math.round(targetPhone.estimatedValue * (Math.random() * 0.3 + 0.95));
+                        this.activeCustomer = { type: 'buyer', name: name, phone: targetPhone, price: offer };
+                    }
+                }
+
+                this.renderSideHUD();
+            }
+
+            acceptCustomerDeal() {
+                if (!this.activeCustomer) return;
+                const c = this.activeCustomer;
+
+                if (c.type === 'seller') {
+                    if (this.cash < c.price) {
+                        this.showModal("Insufficient Cash", "You don't have enough cash balance to buy this phone!");
+                        return;
+                    }
+                    this.cash -= c.price;
+                    c.phone.costPrice = c.price;
+                    this.inventory.push(c.phone);
+                    this.playSound('cash');
+                } else {
+                    // BUYER purchasing phone from player inventory
+                    if (c.phone.isLocked) {
+                        this.showModal("Security Locked", "Customers refuse to buy security locked devices! Bypass the lock at the Repair Bench first.");
+                        return;
+                    }
+                    this.cash += c.price;
+                    this.rep = Math.min(100, this.rep + 3);
+
+                    // Remove sold phone from showcase slot if mounted
+                    if (c.phone.showcaseSlot !== null) {
+                        this.showcaseSlots[c.phone.showcaseSlot] = null;
+                        this.update3DShowcaseMesh(c.phone.showcaseSlot, null);
+                    }
+                    // Remove from player inventory
+                    this.inventory = this.inventory.filter(p => p.id !== c.phone.id);
+                    
+                    // Unmount from workbench if active
+                    if (this.mountedPhoneId === c.phone.id) {
+                        this.mountOnWorkbench('');
+                    }
+
+                    this.playSound('cash');
+                }
+
+                this.activeCustomer = null;
+                this.updateStatsDisplay();
+                this.renderSideHUD();
+            }
+
+            declineCustomer() {
+                this.playSound('click');
+                this.activeCustomer = null;
+                this.renderSideHUD();
+            }
+
+            assignToShowcase(phoneId, slotIdx) {
+                const phone = this.inventory.find(p => p.id === phoneId);
+                if (!phone) return;
+
+                phone.showcaseSlot = slotIdx;
+                this.showcaseSlots[slotIdx] = phone;
+                this.update3DShowcaseMesh(slotIdx, phone);
+                this.renderSideHUD();
+            }
+
+            removeFromShowcase(slotIdx) {
+                const phone = this.showcaseSlots[slotIdx];
+                if (phone) {
+                    phone.showcaseSlot = null;
+                    this.showcaseSlots[slotIdx] = null;
+                    this.update3DShowcaseMesh(slotIdx, null);
+                    this.renderSideHUD();
+                }
+            }
+
+            update3DShowcaseMesh(slotIdx, phoneData) {
+                if (this.showcaseMeshes[slotIdx]) {
+                    this.scene.remove(this.showcaseMeshes[slotIdx]);
+                    this.showcaseMeshes[slotIdx] = null;
+                }
+
+                if (phoneData) {
+                    const mesh = this.create3DPhoneMesh(phoneData);
+                    mesh.position.set(-0.6 + slotIdx * 0.6, 0.28, 0.3);
+                    mesh.rotation.y = 0.2;
+                    this.scene.add(mesh);
+                    this.showcaseMeshes[slotIdx] = mesh;
+                }
+            }
+
+            mountOnWorkbench(phoneId) {
+                this.mountedPhoneId = phoneId;
+                const phone = this.inventory.find(p => p.id === phoneId);
+
+                if (this.meshPhoneOnWorkbench) {
+                    this.scene.remove(this.meshPhoneOnWorkbench);
+                    this.meshPhoneOnWorkbench = null;
+                }
+
+                if (phone) {
+                    this.meshPhoneOnWorkbench = this.create3DPhoneMesh(phone);
+                    this.meshPhoneOnWorkbench.position.set(-1.8, 0.14, 0);
+                    this.meshPhoneOnWorkbench.rotation.y = Math.PI / 4;
+                    this.scene.add(this.meshPhoneOnWorkbench);
+                }
+
+                this.renderSideHUD();
+            }
+
+            repairAction(type) {
+                const phone = this.inventory.find(p => p.id === this.mountedPhoneId);
+                if (!phone) return;
+
+                if (type === 'screen' && phone.screenCrack) {
+                    if (this.cash < 2500) return this.showModal("Insufficient Cash", "Need NPR 2,500 cash for replacement glass!");
+                    this.cash -= 2500;
+                    phone.screenCrack = false;
+                    phone.estimatedValue = Math.round(phone.estimatedValue * 1.35);
+                    this.playSound('repair');
+                } else if (type === 'battery' && phone.battery < 100) {
+                    if (this.cash < 1800) return this.showModal("Insufficient Cash", "Need NPR 1,800 cash for new battery cell!");
+                    this.cash -= 1800;
+                    phone.battery = 100;
+                    phone.estimatedValue = Math.round(phone.estimatedValue * 1.2);
+                    this.playSound('repair');
+                } else if (type === 'unlock' && phone.isLocked) {
+                    if (this.cash < 3500) return this.showModal("Insufficient Cash", "Need NPR 3,500 cash for security bypass dongle!");
+                    this.cash -= 3500;
+                    phone.isLocked = false;
+                    phone.estimatedValue = Math.round(phone.estimatedValue * 1.6);
+                    this.playSound('repair');
+                }
+
+                this.mountOnWorkbench(phone.id);
+                this.updateStatsDisplay();
+            }
+
+            buyNetListing(listingId) {
+                const item = this.marketplaceListings.find(x => x.id === listingId);
+                if (!item) return;
+
+                if (this.cash < item.price) {
+                    this.showModal("Insufficient Cash", "You do not have enough cash balance to buy this listing!");
+                    return;
+                }
+
+                this.cash -= item.price;
+                item.phone.costPrice = item.price;
+                this.inventory.push(item.phone);
+                this.marketplaceListings = this.marketplaceListings.filter(x => x.id !== listingId);
+                this.playSound('cash');
+                this.updateStatsDisplay();
+                this.renderSideHUD();
+            }
+
+            nextDay() {
+                this.day += 1;
+                const rent = 2000;
+                this.cash -= rent;
+
+                // Overnight Display Stand Sales from Owned Inventory
+                let soldCount = 0;
+                this.showcaseSlots.forEach((phone, idx) => {
+                    if (phone && !phone.isLocked && Math.random() < 0.65) {
+                        const price = Math.round(phone.estimatedValue * 1.25);
+                        this.cash += price;
+                        this.inventory = this.inventory.filter(p => p.id !== phone.id);
+                        this.showcaseSlots[idx] = null;
+                        this.update3DShowcaseMesh(idx, null);
+                        soldCount++;
+                    }
+                });
+
+                this.generateMarketplaceListings();
+                this.updateStatsDisplay();
+                this.showModal("Day Passed", `Welcome to Day ${this.day}. Rent of NPR 2,000 deducted. ${soldCount} phone(s) sold overnight from display stands.`);
+                this.renderSideHUD();
+            }
+
+            toggleInventoryModal() {
+                const modal = document.getElementById('inventory-modal');
+                const container = document.getElementById('inventory-list-container');
+
+                if (modal.classList.contains('hidden')) {
+                    if (this.inventory.length === 0) {
+                        container.innerHTML = `<p class="text-center py-10 text-gray-500 text-sm font-mono">No owned phones in stock. Call customers or buy from Net-Marketplace!</p>`;
+                    } else {
+                        container.innerHTML = this.inventory.map(phone => {
+                            let locationTag = "In Storage";
+                            if (phone.showcaseSlot !== null) locationTag = `On Display Stand #${phone.showcaseSlot + 1}`;
+                            if (phone.id === this.mountedPhoneId) locationTag = `On Repair Workbench`;
+
+                            return `
+                                <div class="bg-cyber-card p-4 rounded-xl border border-cyber-border flex flex-wrap justify-between items-center gap-3">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="font-orbitron font-bold text-sm text-white">${phone.modelName}</span>
+                                            <span class="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded uppercase font-mono">${locationTag}</span>
+                                        </div>
+                                        <div class="text-xs text-gray-400 font-mono space-x-3">
+                                            <span>Storage: ${phone.storage}GB</span>
+                                            <span>Battery: <span class="${phone.battery < 70 ? 'text-amber-400' : 'text-green-400'}">${phone.battery}%</span></span>
+                                            <span>Screen: <span class="${phone.screenCrack ? 'text-red-400' : 'text-green-400'}">${phone.screenCrack ? 'Cracked' : 'OK'}</span></span>
+                                            <span>Lock: <span class="${phone.isLocked ? 'text-red-400' : 'text-green-400'}">${phone.isLocked ? 'Locked' : 'Clean'}</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <div class="text-right font-mono">
+                                            <p class="text-[10px] text-gray-400">Cost: NPR ${phone.costPrice.toLocaleString()}</p>
+                                            <p class="text-xs font-bold text-green-400">Value: NPR ${phone.estimatedValue.toLocaleString()}</p>
+                                        </div>
+                                        <button onclick="game.toggleInventoryModal(); game.switchCameraView('workbench'); game.mountOnWorkbench('${phone.id}')" class="bg-cyan-500 hover:bg-cyan-400 text-black px-3 py-1.5 rounded-lg text-xs font-orbitron font-bold transition cursor-pointer">
+                                            REPAIR
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                    modal.classList.remove('hidden');
+                } else {
+                    modal.classList.add('hidden');
+                }
+            }
+
+            renderSideHUD() {
+                const panel = document.getElementById('side-hud-panel');
+
+                if (this.cameraView === 'counter') {
+                    panel.innerHTML = `
+                        <div class="space-y-4 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center border-b border-cyber-border pb-3 mb-3">
+                                    <h3 class="font-orbitron font-bold text-sm text-cyan-300">COUNTER DESK</h3>
+                                    <button onclick="game.callCustomer()" class="bg-cyan-500 hover:bg-cyan-400 text-black px-3 py-1.5 rounded-xl text-xs font-orbitron font-bold transition cursor-pointer">
+                                        CALL CUSTOMER
+                                    </button>
+                                </div>
+
+                                ${this.activeCustomer ? `
+                                    <div class="bg-cyber-bg p-3 rounded-xl border border-cyber-border space-y-3">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-orbitron font-bold text-xs text-white">${this.activeCustomer.name}</span>
+                                            <span class="text-xs ${this.activeCustomer.type === 'seller' ? 'text-amber-400' : 'text-green-400'} uppercase font-mono font-bold">${this.activeCustomer.type === 'seller' ? 'Selling to you' : 'Wants to buy from you'}</span>
+                                        </div>
+                                        <div class="text-xs text-gray-300 space-y-1">
+                                            <p class="font-semibold text-white">${this.activeCustomer.phone.modelName}</p>
+                                            <p class="text-gray-400">Battery: ${this.activeCustomer.phone.battery}% | ${this.activeCustomer.phone.storage}GB</p>
+                                            <p class="text-green-400 font-mono font-bold">Offer: NPR ${this.activeCustomer.price.toLocaleString()}</p>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2 pt-2">
+                                            <button onclick="game.declineCustomer()" class="bg-red-500/20 text-red-400 border border-red-500/40 py-1.5 rounded-lg text-xs font-orbitron cursor-pointer">DECLINE</button>
+                                            <button onclick="game.acceptCustomerDeal()" class="bg-cyan-500 text-black font-bold py-1.5 rounded-lg text-xs font-orbitron cursor-pointer">DEAL</button>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="text-center py-10 text-gray-500 text-xs">
+                                        <i class="fa-solid fa-person-walking text-3xl mb-2"></i>
+                                        <p>Counter is empty. Click "Call Customer" to bring in buyers or sellers.</p>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                } else if (this.cameraView === 'workbench') {
+                    const phone = this.inventory.find(p => p.id === this.mountedPhoneId);
+                    panel.innerHTML = `
+                        <div class="space-y-4 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-orbitron font-bold text-sm text-yellow-400 border-b border-cyber-border pb-3 mb-3">REPAIR BENCH</h3>
+                                
+                                <div class="space-y-2 mb-4">
+                                    <label class="text-[10px] text-gray-400 uppercase font-mono">Select Owned Phone</label>
+                                    <select onchange="game.mountOnWorkbench(this.value)" class="w-full bg-cyber-bg border border-cyber-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+                                        <option value="">-- Choose Inventory Phone --</option>
+                                        ${this.inventory.map(p => `<option value="${p.id}" ${p.id === this.mountedPhoneId ? 'selected' : ''}>${p.modelName}</option>`).join('')}
+                                    </select>
+                                </div>
+
+                                ${phone ? `
+                                    <div class="bg-cyber-bg p-3 rounded-xl border border-cyber-border space-y-2 text-xs font-mono mb-4">
+                                        <div class="flex justify-between"><span class="text-gray-400">Screen Glass:</span> <span class="${phone.screenCrack ? 'text-red-400' : 'text-green-400'}">${phone.screenCrack ? 'Cracked' : 'Intact'}</span></div>
+                                        <div class="flex justify-between"><span class="text-gray-400">Battery Health:</span> <span class="${phone.battery < 70 ? 'text-amber-400' : 'text-green-400'}">${phone.battery}%</span></div>
+                                        <div class="flex justify-between"><span class="text-gray-400">Security Lock:</span> <span class="${phone.isLocked ? 'text-red-400' : 'text-green-400'}">${phone.isLocked ? 'Locked' : 'Clean'}</span></div>
+                                        <div class="flex justify-between border-t border-cyber-border pt-1"><span class="text-gray-400">Est. Value:</span> <span class="text-green-400">NPR ${phone.estimatedValue.toLocaleString()}</span></div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <button onclick="game.repairAction('screen')" ${!phone.screenCrack ? 'disabled' : ''} class="w-full ${phone.screenCrack ? 'bg-cyan-500 hover:bg-cyan-400 text-black cursor-pointer' : 'bg-gray-800 text-gray-500'} py-2 rounded-xl text-xs font-orbitron font-bold transition">FIX SCREEN (NPR 2,500)</button>
+                                        <button onclick="game.repairAction('battery')" ${phone.battery >= 100 ? 'disabled' : ''} class="w-full ${phone.battery < 100 ? 'bg-cyan-500 hover:bg-cyan-400 text-black cursor-pointer' : 'bg-gray-800 text-gray-500'} py-2 rounded-xl text-xs font-orbitron font-bold transition">SWAP BATTERY (NPR 1,800)</button>
+                                        <button onclick="game.repairAction('unlock')" ${!phone.isLocked ? 'disabled' : ''} class="w-full ${phone.isLocked ? 'bg-purple-600 hover:bg-purple-500 text-white cursor-pointer' : 'bg-gray-800 text-gray-500'} py-2 rounded-xl text-xs font-orbitron font-bold transition">BYPASS LOCK (NPR 3,500)</button>
+                                    </div>
+                                ` : `<p class="text-xs text-gray-500 text-center py-6">Select an owned phone above to inspect and repair on bench.</p>`}
+                            </div>
+                        </div>
+                    `;
+                } else if (this.cameraView === 'showcase') {
+                    panel.innerHTML = `
+                        <div class="space-y-4 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-orbitron font-bold text-sm text-cyan-300 border-b border-cyber-border pb-3 mb-3">3D DISPLAY STANDS</h3>
+                                <div class="space-y-3">
+                                    ${this.showcaseSlots.map((phone, idx) => `
+                                        <div class="bg-cyber-bg p-3 rounded-xl border border-cyber-border flex justify-between items-center text-xs">
+                                            <div>
+                                                <p class="font-orbitron font-bold text-white">Stand #${idx + 1}</p>
+                                                <p class="text-gray-400">${phone ? phone.modelName : 'Empty Display Stand'}</p>
+                                            </div>
+                                            ${phone ? `
+                                                <button onclick="game.removeFromShowcase(${idx})" class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-[10px] font-orbitron cursor-pointer">REMOVE</button>
+                                            ` : `
+                                                <select onchange="game.assignToShowcase(this.value, ${idx})" class="bg-cyber-card border border-cyber-border rounded px-2 py-1 text-[10px] text-cyan-300">
+                                                    <option value="">+ Place Phone</option>
+                                                    ${this.inventory.filter(p => p.showcaseSlot === null).map(p => `<option value="${p.id}">${p.modelName}</option>`).join('')}
+                                                </select>
+                                            `}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (this.cameraView === 'laptop') {
+                    panel.innerHTML = `
+                        <div class="space-y-4 flex-1 flex flex-col justify-between overflow-y-auto">
+                            <div>
+                                <h3 class="font-orbitron font-bold text-sm text-purple-400 border-b border-cyber-border pb-3 mb-3">NET-MARKETPLACE</h3>
+                                <div class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                                    ${this.marketplaceListings.map(item => `
+                                        <div class="bg-cyber-bg p-3 rounded-xl border border-cyber-border space-y-2 text-xs">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-gray-400 font-mono text-[10px]">Seller: ${item.seller}</span>
+                                                <span class="text-green-400 font-mono font-bold">NPR ${item.price.toLocaleString()}</span>
+                                            </div>
+                                            <p class="font-bold text-white">${item.phone.modelName}</p>
+                                            <button onclick="game.buyNetListing('${item.id}')" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-orbitron font-bold py-1.5 rounded-lg text-[10px] cursor-pointer">BUY DEVICE</button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            updateStatsDisplay() {
+                document.getElementById('stat-cash').textContent = `NPR ${this.cash.toLocaleString()}`;
+                document.getElementById('stat-stock').textContent = `${this.inventory.length} Units`;
+                document.getElementById('stat-rep').textContent = `${this.rep}/100`;
+                document.getElementById('stat-day').textContent = this.day;
+            }
+
+            showModal(title, msg) {
+                const modal = document.getElementById('game-modal');
+                const card = document.getElementById('modal-card');
+                card.innerHTML = `
+                    <h3 class="font-orbitron font-bold text-lg text-white">${title}</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">${msg}</p>
+                    <button onclick="game.closeModal()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-orbitron font-bold py-2 rounded-xl text-xs cursor-pointer">OK</button>
+                `;
+                modal.classList.remove('hidden');
+            }
+
+            closeModal() {
+                document.getElementById('game-modal').classList.add('hidden');
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                if (this.meshPhoneOnWorkbench) {
+                    this.meshPhoneOnWorkbench.rotation.y += 0.005;
+                }
+
+                this.showcaseMeshes.forEach(m => {
+                    if (m) m.rotation.y += 0.008;
+                });
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        let game = null;
+        window.onload = function() {
+            game = new MobileForSaleGame();
+        };
+    </script>
+</body>
+</html>
